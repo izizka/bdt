@@ -68,5 +68,16 @@ filter_df = df_buses.loc[df_buses["day_number"] == day_selected]
 filter_df = filter_df[["hour_number", "number_of_vehicles"]]
 st.bar_chart(filter_df, x='hour_number', y='number_of_vehicles')
 
+st.write("""As you can see there is a gap in data on 19th of December between 1 and 5 AM. I did not find any reason for that. 
+I assume that stream was down or the gap is linked with changes from weekend schedules to workday schedules.""")
+st.write("By information provided by DPP (public transport company), they own 802 trams, 1216 buses. There are around 35 tram lines, 143 bus lines.")
+
 
 st.header("Average speed of vehicles in each hour of given date")
+st.write("""This task is more complex then previous one. We have two types of approaches to solve it.""")
+st.write("""First one is to use information sent by vehicle about current speed. There are two problems with this approach. First - data are not send in same intervals. 
+Second - Trains, Trams do not send this type of information (always null) on the other hand boats send this type of information but is often zero (waiting time on the bank of river).
+Second issue can be avoid by computing the average speed on given line within a hour. The average speed for all vehicles within hour is just 
+average of average line speed. """)
+st.write("""Second attitude is easier and more stable/consistent.""")
+
