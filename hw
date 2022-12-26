@@ -1,0 +1,495 @@
+# Databricks notebook source
+Inicializace
+
+# COMMAND ----------
+
+from pyspark.sql.types import *
+def get_pid_schema():
+  schema_pid = StructType([
+      StructField('geometry', StructType([
+          StructField('coordinates', ArrayType(StringType()), True),
+          StructField('type', StringType())])),
+      StructField('properties', StructType([
+          StructField('last_position', StructType([
+              StructField('bearing', IntegerType()),
+              StructField('delay', StructType([
+                  StructField("actual", IntegerType()),
+                  StructField("last_stop_arrival", StringType()),
+                  StructField("last_stop_departure", StringType())])),
+              StructField("is_canceled", BooleanType()),
+              StructField('last_stop', StructType([
+                  StructField("arrival_time", StringType()),
+                  StructField("departure_time", StringType()),
+                  StructField("id", StringType()),
+                  StructField("sequence", IntegerType())])),
+              StructField('next_stop', StructType([
+                  StructField("arrival_time", StringType()),
+                  StructField("departure_time", StringType()),
+                  StructField("id", StringType()),
+                  StructField("sequence", IntegerType())])),
+              StructField("origin_timestamp", StringType()),
+              StructField("shape_dist_traveled", StringType()),
+              StructField("speed", StringType()),
+              StructField("state_position", StringType()),
+              StructField("tracking", BooleanType())])),
+          StructField('trip', StructType([
+              StructField('agency_name', StructType([
+                  StructField("real", StringType()),
+                  StructField("scheduled", StringType())])),
+              StructField('cis', StructType([
+                  StructField("line_id", StringType()),
+                  StructField("trip_number", StringType())])),
+              StructField('gtfs', StructType([
+                  StructField("route_id", StringType()),
+                  StructField("route_short_name", StringType()),
+                  StructField("route_type", IntegerType()),
+                  StructField("trip_headsign", StringType()),
+                  StructField("trip_id", StringType()),
+                  StructField("trip_short_name", StringType())])),
+              StructField("origin_route_name", StringType()),
+              StructField("sequence_id", IntegerType()),
+              StructField("start_timestamp", StringType()),
+              StructField("vehicle_registration_number", IntegerType()),
+              StructField('vehicle_type', StructType([
+                  StructField("description_cs", StringType()),
+                  StructField("description_en", StringType()),
+                  StructField("id", IntegerType())])),
+              StructField("wheelchair_accessible", BooleanType()),
+              StructField("air_conditioned", BooleanType())]))])),
+      StructField("type", StringType())
+  ])
+  return schema_pid
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Nacitani streamu a ukladani do tabulek
+
+# COMMAND ----------
+
+#TRAMS
+from pyspark.sql.types import *
+from pyspark.sql.functions import from_json, col
+
+# connect to broker
+JAAS = 'org.apache.kafka.common.security.scram.ScramLoginModule required username="fel.student" password="FelBigDataWinter2022bflmpsvz";'
+schema_pid=get_pid_schema() 
+
+#trams -----------------
+df_trams = spark.readStream \
+  .format("kafka")\
+  .option("kafka.bootstrap.servers", "b-2-public.bdffelkafka.3jtrac.c19.kafka.us-east-1.amazonaws.com:9196, b-1-public.bdffelkafka.3jtrac.c19.kafka.us-east-1.amazonaws.com:9196") \
+  .option("kafka.sasl.mechanism", "SCRAM-SHA-512")\
+  .option("kafka.security.protocol", "SASL_SSL") \
+  .option("kafka.sasl.jaas.config", JAAS) \
+  .option("subscribe", "trams") \
+  .load()
+
+
+select_base_trams = df_trams.select(from_json(col("value").cast("string"),schema_pid).alias("data")).select("data.*") 
+select_stream = select_base_trams.writeStream \
+        .format("delta")\
+        .outputMode("append")\
+        .option("checkpointLocation", "/tmp/trams/test")\
+        .toTable("TestTrams")
+
+
+#train -----------------
+df_trains = spark.readStream \
+  .format("kafka")\
+  .option("kafka.bootstrap.servers", "b-2-public.bdffelkafka.3jtrac.c19.kafka.us-east-1.amazonaws.com:9196, b-1-public.bdffelkafka.3jtrac.c19.kafka.us-east-1.amazonaws.com:9196") \
+  .option("kafka.sasl.mechanism", "SCRAM-SHA-512")\
+  .option("kafka.security.protocol", "SASL_SSL") \
+  .option("kafka.sasl.jaas.config", JAAS) \
+  .option("subscribe", "trains") \
+  .load()
+
+
+select_base_trains = df_trains.select(from_json(col("value").cast("string"),schema_pid).alias("data")).select("data.*") 
+select_stream = select_base_trains.writeStream \
+        .format("delta")\
+        .outputMode("append")\
+        .option("checkpointLocation", "/tmp/trains/test")\
+        .toTable("TestTrains")
+
+#bus -----------------
+df_buses = spark.readStream \
+  .format("kafka")\
+  .option("kafka.bootstrap.servers", "b-2-public.bdffelkafka.3jtrac.c19.kafka.us-east-1.amazonaws.com:9196, b-1-public.bdffelkafka.3jtrac.c19.kafka.us-east-1.amazonaws.com:9196") \
+  .option("kafka.sasl.mechanism", "SCRAM-SHA-512")\
+  .option("kafka.security.protocol", "SASL_SSL") \
+  .option("kafka.sasl.jaas.config", JAAS) \
+  .option("subscribe", "buses") \
+  .load()
+
+
+select_base_buses = df_buses.select(from_json(col("value").cast("string"),schema_pid).alias("data")).select("data.*") 
+select_stream = select_base_buses.writeStream \
+            .format("delta")\
+            .outputMode("append")\
+            .option("checkpointLocation", "/tmp/buses/test")\
+            .toTable("TestBuses")
+
+#regbus -------------------
+df_regbuses = spark.readStream \
+  .format("kafka")\
+  .option("kafka.bootstrap.servers", "b-2-public.bdffelkafka.3jtrac.c19.kafka.us-east-1.amazonaws.com:9196, b-1-public.bdffelkafka.3jtrac.c19.kafka.us-east-1.amazonaws.com:9196") \
+  .option("kafka.sasl.mechanism", "SCRAM-SHA-512")\
+  .option("kafka.security.protocol", "SASL_SSL") \
+  .option("kafka.sasl.jaas.config", JAAS) \
+  .option("subscribe", "regbuses") \
+  .load()
+
+
+select_base_regbuses = df_regbuses.select(from_json(col("value").cast("string"),schema_pid).alias("data")).select("data.*") 
+select_stream = select_base_regbuses.writeStream \
+            .format("delta")\
+            .outputMode("append")\
+            .option("checkpointLocation", "/tmp/regbuses/test1")\
+            .toTable("TestRegbuses")
+
+
+#boats -------
+df_boats = spark.readStream \
+  .format("kafka")\
+  .option("kafka.bootstrap.servers", "b-2-public.bdffelkafka.3jtrac.c19.kafka.us-east-1.amazonaws.com:9196, b-1-public.bdffelkafka.3jtrac.c19.kafka.us-east-1.amazonaws.com:9196") \
+  .option("kafka.sasl.mechanism", "SCRAM-SHA-512")\
+  .option("kafka.security.protocol", "SASL_SSL") \
+  .option("kafka.sasl.jaas.config", JAAS) \
+  .option("subscribe", "boats") \
+  .load()
+
+
+select_base_boats = df_boats.select(from_json(col("value").cast("string"),schema_pid).alias("data")).select("data.*") 
+select_stream = select_base_boats.writeStream \
+            .format("delta")\
+            .outputMode("append")\
+            .option("checkpointLocation", "/tmp/boats/test")\
+            .toTable("TestBoats")
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC create or replace view regbuses_info as 
+# MAGIC (select DISTINCT properties.last_position.speed as speed, 
+# MAGIC properties.last_position.shape_dist_traveled as dist, 
+# MAGIC properties.trip.vehicle_registration_number as car_id,
+# MAGIC extract(MONTH from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as month_number,
+# MAGIC extract(day from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as day_number,
+# MAGIC extract(HOUR from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as hour_number,
+# MAGIC extract(MINUTE from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as minute_number,
+# MAGIC properties.trip.vehicle_type.description_en as type, 
+# MAGIC properties.trip.gtfs.trip_id as trip_id, 
+# MAGIC properties.last_position.is_canceled  as is_canceled,
+# MAGIC properties
+# MAGIC from TestRegbuses
+# MAGIC order by car_id, day_number,hour_number, minute_number);
+# MAGIC 
+# MAGIC 
+# MAGIC create or replace view regbuses_grouped as
+# MAGIC (select avg(speed) as avg_speed, car_id, hour_number, day_number from regbuses_info group by car_id, hour_number, day_number ORDER BY car_id);
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC create or replace view boats_id_d_h_avg_speed as (
+# MAGIC select car_id, day_number, hour_number, coalesce(sum(time_speed)/sum(time_total), 0) as avg_speed from (
+# MAGIC select *, (speed * time_total) as time_speed from(
+# MAGIC select count(*), car_id, day_number, hour_number, trip_id, (max(dist) - min(dist)) as total_dist, max(minute_number) as max_minutes, min(minute_number) as min_minutes, (max(minute_number) - min(minute_number)) as time_total,
+# MAGIC coalesce(( (max(dist) - min(dist))/((1/60)*(max(minute_number) - min(minute_number)))), 0) as speed
+# MAGIC from
+# MAGIC (
+# MAGIC select properties.last_position.speed::int as speed, 
+# MAGIC properties.last_position.shape_dist_traveled::float as dist, 
+# MAGIC properties.trip.vehicle_registration_number::int as car_id,
+# MAGIC extract(MONTH from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as month_number,
+# MAGIC extract(day from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as day_number,
+# MAGIC extract(HOUR from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as hour_number,
+# MAGIC extract(MINUTE from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as minute_number,
+# MAGIC properties.trip.vehicle_type.description_en as type, 
+# MAGIC properties.trip.gtfs.trip_id as trip_id, 
+# MAGIC properties.last_position.is_canceled  as is_canceled,
+# MAGIC properties
+# MAGIC from TestBoats
+# MAGIC ) group by car_id, day_number, hour_number, trip_id)
+# MAGIC )
+# MAGIC group by car_id, day_number, hour_number)
+# MAGIC ;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from
+# MAGIC (
+# MAGIC select properties.last_position.speed::int as speed, 
+# MAGIC properties.last_position.shape_dist_traveled::float as dist, 
+# MAGIC properties.trip.vehicle_registration_number::int as car_id,
+# MAGIC extract(MONTH from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as month_number,
+# MAGIC extract(day from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as day_number,
+# MAGIC extract(HOUR from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as hour_number,
+# MAGIC extract(MINUTE from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as minute_number,
+# MAGIC properties.trip.vehicle_type.description_en as type, 
+# MAGIC properties.trip.gtfs.trip_id as trip_id, 
+# MAGIC properties.last_position.is_canceled  as is_canceled,
+# MAGIC properties
+# MAGIC from TestBoats
+# MAGIC )
+# MAGIC where day_number = 18
+# MAGIC order by car_id, hour_number, minute_number, trip_id;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select properties.last_position.speed::int as speed, 
+# MAGIC properties.last_position.shape_dist_traveled::float as dist, 
+# MAGIC properties.trip.vehicle_registration_number::int as car_id,
+# MAGIC extract(MONTH from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as month_number,
+# MAGIC extract(day from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as day_number,
+# MAGIC extract(HOUR from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as hour_number,
+# MAGIC extract(MINUTE from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as minute_number,
+# MAGIC properties.trip.vehicle_type.description_en as type, 
+# MAGIC properties.trip.gtfs.trip_id as trip_id, 
+# MAGIC properties.last_position.is_canceled  as is_canceled,
+# MAGIC properties
+# MAGIC from TestBoats
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC create or replace view buses_info as 
+# MAGIC (select DISTINCT properties.last_position.speed as speed, 
+# MAGIC properties.last_position.shape_dist_traveled as dist, 
+# MAGIC properties.trip.vehicle_registration_number as car_id,
+# MAGIC extract(MONTH from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as month_number,
+# MAGIC extract(day from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as day_number,
+# MAGIC extract(HOUR from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as hour_number,
+# MAGIC extract(MINUTE from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as minute_number,
+# MAGIC properties.trip.vehicle_type.description_en as type, 
+# MAGIC properties.trip.gtfs.trip_id as trip_id, 
+# MAGIC properties.last_position.is_canceled  as is_canceled,
+# MAGIC properties
+# MAGIC from TestBuses
+# MAGIC order by car_id, day_number,hour_number, minute_number);
+# MAGIC 
+# MAGIC 
+# MAGIC create or replace view buses_grouped as
+# MAGIC (select avg(speed) as avg_speed, car_id, hour_number, day_number from buses_info group by car_id, hour_number, day_number ORDER BY car_id);
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC create or replace view tram_id_d_h_avg_speed as (
+# MAGIC select car_id, day_number, hour_number, sum(time_speed)/sum(time_total) as avg_speed from (
+# MAGIC select *, (speed * time_total) as time_speed from(
+# MAGIC select count(*), car_id, day_number, hour_number, trip_id, (max(dist) - min(dist)) as total_dist, max(minute_number) as max_minutes, min(minute_number) as min_minutes, (max(minute_number) - min(minute_number)) as time_total,
+# MAGIC ( (max(dist) - min(dist))/((1/60)*(max(minute_number) - min(minute_number)))) as speed
+# MAGIC from
+# MAGIC (
+# MAGIC select properties.last_position.speed::int as speed, 
+# MAGIC properties.last_position.shape_dist_traveled::float as dist, 
+# MAGIC properties.trip.vehicle_registration_number::int as car_id,
+# MAGIC extract(MONTH from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as month_number,
+# MAGIC extract(day from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as day_number,
+# MAGIC extract(HOUR from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as hour_number,
+# MAGIC extract(MINUTE from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as minute_number,
+# MAGIC properties.trip.vehicle_type.description_en as type, 
+# MAGIC properties.trip.gtfs.trip_id as trip_id, 
+# MAGIC properties.last_position.is_canceled  as is_canceled,
+# MAGIC properties
+# MAGIC from TestTrams
+# MAGIC ) group by car_id, day_number, hour_number, trip_id)
+# MAGIC )
+# MAGIC group by car_id, day_number, hour_number)
+# MAGIC ;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC create or replace view trains_id_d_h_avg_speed as (
+# MAGIC select trip_id, day_number, hour_number, sum(time_speed)/sum(time_total) as avg_speed from (
+# MAGIC select *, (speed * time_total) as time_speed from(
+# MAGIC select count(*), day_number, hour_number, trip_id, (max(dist) - min(dist)) as total_dist, max(minute_number) as max_minutes, min(minute_number) as min_minutes, (max(minute_number) - min(minute_number)) as time_total,
+# MAGIC ( (max(dist) - min(dist))/((1/60)*(max(minute_number) - min(minute_number)))) as speed
+# MAGIC from
+# MAGIC (
+# MAGIC select properties.last_position.speed::int as speed, 
+# MAGIC properties.last_position.shape_dist_traveled::float as dist, 
+# MAGIC extract(MONTH from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as month_number,
+# MAGIC extract(day from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as day_number,
+# MAGIC extract(HOUR from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as hour_number,
+# MAGIC extract(MINUTE from substring(properties.last_position.origin_timestamp, 0, len(properties.last_position.origin_timestamp) - 6)) as minute_number,
+# MAGIC properties.trip.gtfs.trip_id as trip_id, 
+# MAGIC properties.last_position.is_canceled  as is_canceled,
+# MAGIC properties
+# MAGIC from TestTrains
+# MAGIC ) group by day_number, hour_number, trip_id)
+# MAGIC )
+# MAGIC group by day_number, hour_number, trip_id)
+# MAGIC ;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from trains_id_d_h_avg_speed order by day_number, hour_number;
+
+# COMMAND ----------
+
+import numpy as np
+import matplotlib.pyplot as plt
+import pyspark
+
+def add_value_labels(ax, spacing=5):
+    """Add labels to the end of each bar in a bar chart.
+
+    Arguments:
+        ax (matplotlib.axes.Axes): The matplotlib object containing the axes
+            of the plot to annotate.
+        spacing (int): The distance between the labels and the bars.
+    """
+
+    # For each bar: Place a label
+    for rect in ax.patches:
+        # Get X and Y placement of label from rect.
+        y_value = rect.get_height()
+        x_value = rect.get_x() + rect.get_width() / 2
+
+        # Number of points between bar and label. Change to your liking.
+        space = spacing
+        # Vertical alignment for positive values
+        va = 'bottom'
+
+        # If value of bar is negative: Place label below bar
+        if y_value < 0:
+            # Invert space to place label below
+            space *= -1
+            # Vertically align label at top
+            va = 'top'
+
+        # Use Y value as label and format number with one decimal place
+        label = "{:.1f}".format(y_value)
+
+        # Create annotation
+        ax.annotate(
+            label,                      # Use `label` as label
+            (x_value, y_value),         # Place label at end of the bar
+            xytext=(0, space),          # Vertically shift label by `space`
+            textcoords="offset points", # Interpret `xytext` as offset in points
+            ha='center',                # Horizontally center label
+            va=va)                      # Vertically align label differently for
+                                        # positive and negative values.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Buses
+
+# COMMAND ----------
+
+
+
+df = spark.sql("select DISTINCT (hour_number::int + 1) as hour_number, count(car_id) as number_of_vehicles from buses_grouped where day_number = 18 group by hour_number order by hour_number;").toPandas()
+
+p = df.plot(x="hour_number", y="number_of_vehicles", kind="bar", title="Buses count over hours", ylabel="Number of vehicles", figsize=(12, 8))
+p.set_ylim(ymin = 0, ymax=600)
+p.get_legend().remove()
+add_value_labels(p)
+
+# COMMAND ----------
+
+df = spark.sql("select (hour_number::int + 1) as hour_number, avg(speed) as avg_speed_vehicles from buses_info where day_number = 18 group by hour_number order by hour_number;").toPandas()
+
+p = df.plot(x="hour_number", y="avg_speed_vehicles", kind="bar", title="Buses avg speed over hours", ylabel="speed", figsize=(12, 8))
+p.set_ylim(ymin = 0, ymax=60)
+p.get_legend().remove()
+add_value_labels(p)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Vypocet rychlosti u tramvaji
+
+# COMMAND ----------
+
+df = spark.sql("select (hour_number::int + 1) as hour_number, count(car_id) as number_of_vehicles from tram_id_d_h_avg_speed where day_number = 18 group by hour_number order by hour_number;").toPandas()
+
+p = df.plot(x="hour_number", y="number_of_vehicles", kind="bar", title="Trams number over hours", ylabel="speed", figsize=(12, 8))
+p.set_ylim(ymin = 0, ymax=300)
+p.get_legend().remove()
+add_value_labels(p)
+
+# COMMAND ----------
+
+
+df = spark.sql("select (hour_number::int + 1) as hour_number, avg(avg_speed) as avg_speed_vehicles from tram_id_d_h_avg_speed where day_number = 18 group by hour_number order by hour_number;").toPandas()
+
+p = df.plot(x="hour_number", y="avg_speed_vehicles", kind="bar", title="Trams avg speed over hours", ylabel="speed", figsize=(12, 8))
+p.set_ylim(ymin = 0, ymax=60)
+p.get_legend().remove()
+add_value_labels(p)
+
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC RegBuses
+
+# COMMAND ----------
+
+df = spark.sql("select DISTINCT (hour_number::int + 1) as hour_number, count(car_id) as number_of_vehicles from regbuses_grouped where day_number = 18 group by hour_number order by hour_number;").toPandas()
+
+p = df.plot(x="hour_number", y="number_of_vehicles", kind="bar", title="RegBuses count over hours", ylabel="Number of vehicles", figsize=(12, 8))
+p.set_ylim(ymin = 0, ymax=600)
+p.get_legend().remove()
+add_value_labels(p)
+
+# COMMAND ----------
+
+df = spark.sql("select (hour_number::int + 1) as hour_number, avg(speed) as avg_speed_vehicles from regbuses_info where day_number = 18 group by hour_number order by hour_number;").toPandas()
+
+p = df.plot(x="hour_number", y="avg_speed_vehicles", kind="bar", title="RegBuses avg speed over hours", ylabel="speed", figsize=(12, 8))
+p.set_ylim(ymin = 0, ymax=60)
+p.get_legend().remove()
+add_value_labels(p)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Boats
+
+# COMMAND ----------
+
+df = spark.sql("select (hour_number::int + 1) as hour_number, count(car_id) as number_of_vehicles from boats_id_d_h_avg_speed where day_number = 18 group by hour_number order by hour_number;").toPandas()
+
+p = df.plot(x="hour_number", y="number_of_vehicles", kind="bar", title="Boats number over hours", ylabel="speed", figsize=(12, 8))
+p.set_ylim(ymin = 0, ymax=300)
+p.get_legend().remove()
+add_value_labels(p)
+
+# COMMAND ----------
+
+df = spark.sql("select (hour_number::int + 1) as hour_number, avg(avg_speed) as avg_speed_vehicles from boats_id_d_h_avg_speed where day_number = 18 group by hour_number order by hour_number;").toPandas()
+
+p = df.plot(x="hour_number", y="avg_speed_vehicles", kind="bar", title="Boats avg speed over hours", ylabel="speed", figsize=(12, 8))
+p.set_ylim(ymin = 0, ymax=60)
+p.get_legend().remove()
+add_value_labels(p)
+
+
+# COMMAND ----------
+
+df = spark.sql("select (hour_number::int + 1) as hour_number, count(trip_id) as number_of_vehicles from trains_id_d_h_avg_speed where day_number = 18 group by hour_number order by hour_number;").toPandas() 
+
+p = df.plot(x="hour_number", y="number_of_vehicles", kind="bar", title="Trains number over hours", ylabel="speed", figsize=(12, 8))
+p.set_ylim(ymin = 0, ymax=300)
+p.get_legend().remove()
+add_value_labels(p)
+
+# COMMAND ----------
+
+df = spark.sql("select (hour_number::int + 1) as hour_number, avg(avg_speed) as avg_speed_vehicles from trains_id_d_h_avg_speed where day_number = 18 group by hour_number order by hour_number;").toPandas()
+
+p = df.plot(x="hour_number", y="avg_speed_vehicles", kind="bar", title="Trains avg speed over hours", ylabel="speed", figsize=(12, 8))
+p.set_ylim(ymin = 0, ymax=70)
+p.get_legend().remove()
+add_value_labels(p)
