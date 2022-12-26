@@ -7,7 +7,7 @@ import datetime
 st.title('Public Transport Data')
 st.write("""Prague offers information about the movements of the public transport vehicles via its data
          platform Golemio ( https://golemio.cz/data ). Data are collected and pushed with Kafka topics (hosted on AWS). 
-         Data are preprocess and divided to 5 topics.
+         Data are preprocessed and divided to 5 topics.
 
         TOPICS:
         * Trains
