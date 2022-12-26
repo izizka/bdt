@@ -17,7 +17,7 @@ st.write("""Prague offers information about the movements of the public transpor
         * Boats
         """)
 st.write("Streams are processed with DataBricks and data are stored directly to HIVE table. Main process is done with SQL and Spark.")
-st.write("""I would divide kafka topics into three groups:""")
+st.write("""I would divide Kafka topics into three groups:""")
 st.write("  1) where car_id is not null (Trams + Buses + RegBuses)")
 st.write("  2) where car_id is null (Trains)")
 st.write("  3) low number of records (Boats)")
@@ -26,7 +26,7 @@ st.header("Number of vehicles operating in each hour of given date")
 st.write("""The main goal is to find number of unique car_ids in specific hour. As I said there are three logic groups of vehicles. 
 For groups number 1 and 3 the approach is fairly straightforward - just group vehicles by time and car_id and count them.
 Last group is more complicated, there is no vehicle identifier. 
-It makes sense that trains do not have specific id because wagons can be dropped or added between lines.
+It makes sense that trains do not have specific ID because wagons can be dropped or added between lines.
 So I changed the definition of uniques - I counted number of unique train's trip_ids (unique within hour).
 """)
 st.subheader("Select Date")
