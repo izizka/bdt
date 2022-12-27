@@ -74,8 +74,8 @@ st.write("By information provided by DPP (public transport company), they own 80
 
 
 st.header("Average speed of vehicles in each hour of given date")
-st.write("""This task is more complex then previous one. We have two types of approaches to solve it.""")
-st.write("""First one is to use information sent by vehicle about current speed. There are two problems with this approach. First - data are not send in same intervals. 
+st.write("""This task is more complex than the previous one. We have two types of approaches to solve it.""")
+st.write("""First one is to use information sent by vehicle about current speed. There are two problems with this approach. First - data are not send with same period. 
 Second - Trains, Trams do not send this type of information (always null) on the other hand boats send this type of information but is often zero (waiting time on the bank of river).
 Second issue can be avoid by computing the average speed on given line within a hour. The average speed for all vehicles within hour is just 
 average of average line speed. This way of solving count with the randomness in period when the message is sent. Lets say that there is a unify
