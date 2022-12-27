@@ -78,7 +78,7 @@ st.write("""This task is more complex than the previous one. We have two types o
 st.write("""First one is to use information sent by vehicle about current speed. There are two problems with this approach. First - data are not send with same period. 
 Second - Trains, Trams do not sent this type of information (always null) on the other hand boats send current speed which is equal to zero (waiting time on the bank of river).
 Second issue can be avoided by computing the average speed on given line within an hour. The average speed for all vehicles within an hour is just 
-average of the average line speeds. This way of solving count with the randomness in period when the message is sent. Lets say that there is a unify
+average of the average line speeds. This way of solving counts with the randomness in the period when the message is sent. Lets say that there is a uniform
 random distribution of place where the msg is sent. Soo it means that the probability of sanding message in a stop is same as probability of sending message in part of the road between stops.""")
 st.write("""Second attitude is easier and more stable/consistent. The main idea is to sum traveled distances for each car within hour and compute average distance traveled.
 The time window is equal to one hour soo average traveled distance is also average speed for vehicles. I can use similar attitude as in the first approach where current speed is missing.
