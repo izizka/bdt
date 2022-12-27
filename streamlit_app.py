@@ -79,12 +79,12 @@ st.write("""First one is to use information sent by vehicle about current speed.
 Second - Trains, Trams do not sent this type of information (always null) on the other hand boats send current speed which is equal to zero (waiting time on the bank of river).
 Second issue can be avoided by computing the average speed on given line within an hour. The average speed for all vehicles within an hour is just 
 average of the average line speeds. This way of solving counts with the randomness in the period when the message is sent. Let's say that there is a uniform
-random distribution of place where the message is sent. So it means that the probability of sending message at a stop is same as probability of sending message in part of the road between stops.""")
-st.write("""Second attitude is easier and more stable/consistent. The main idea is to sum traveled distances for each car within hour and compute average distance traveled.
-The time window is equal to one hour so average traveled distance is also average speed for vehicles. I can use similar attitude as in the first approach where current speed is missing.
-Instead of computing average speed I would use just distance and time would be one hour.""")
+random distribution of place where the message is sent. So it means that the probability of sending message at a stop is the same as probability of sending message in part of the road between stops.""")
+st.write("""Second attitude is easier and more stable/consistent. The main idea is to sum traveled distances for each car within an hour and compute average distance traveled.
+The time window is equal to one hour so average traveled distance is also the average speed for vehicles. I can use similar attitude as in the first approach where the current speed is missing.
+Instead of computing an average speed I would use just distance and time would be one hour.""")
 
-st.write("""In the following section you can find average speed computed with both approaches (first attitude = first figure | second attitude = second figure)""")
+st.write("""In the following section you can find average speeds computed with both approaches (first attitude = first figure | second attitude = second figure)""")
 
 
 st.subheader("Select Date")
@@ -139,7 +139,7 @@ df_boats = pd.read_csv("csvs/avg_boats.csv", header=0)
 filter_df = df_boats.loc[df_boats["day_number"] == date_selected_avg]
 filter_df = filter_df[["hour_number", "avg_speed"]]
 st.bar_chart(filter_df, x='hour_number', y='avg_speed')
-st.write("The main problem with boats is that there is not enough data. Also there is not huge different between approaches.")
+st.write("The main problem with boats is that there are not enough data. Also there is not a huge difference between approaches.")
 
 st.subheader("Trains")
 
