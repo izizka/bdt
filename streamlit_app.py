@@ -139,7 +139,7 @@ df_boats = pd.read_csv("csvs/avg_boats.csv", header=0)
 filter_df = df_boats.loc[df_boats["day_number"] == date_selected_avg]
 filter_df = filter_df[["hour_number", "avg_speed"]]
 st.bar_chart(filter_df, x='hour_number', y='avg_speed')
-st.write("The main problem with boats is that there are not enough data. Also there is not a huge difference between approaches.")
+st.write("The main problem with boats is that there are not enough data. Also there is not a huge difference between the approaches.")
 
 st.subheader("Trains")
 
@@ -152,9 +152,9 @@ df_trains = pd.read_csv("csvs/avg_trains.csv", header=0)
 filter_df = df_trains.loc[df_trains["day_number"] == date_selected_avg]
 filter_df = filter_df[["hour_number", "avg_speed"]]
 st.bar_chart(filter_df, x='hour_number', y='avg_speed')
-st.write("""Here is the biggest difference between approaches. I double checked the results and I did no find any mistake.
+st.write("""Here is the biggest difference between the approaches. I double checked the results and I did not find any mistake.
     I would say that the second figure is more accurate. The first attitude does not work in this case because of the speed between stops. 
-    Train is really fast if it is not in a stop. The speed limit is around 160 km/h in some cases 120 km/h. We can assume that the speed limit 
-    in Prague's lines is lower. On the other hands, it is still very high compare to other vehicles. I believe that it is the reason behind the
+    Train is really fast if it is not at a stop. The speed limit is around 160 km/h in some cases 120 km/h. We can assume that the speed limit 
+    in Prague's lines is lower. On the other hand, it is still very high compared to other vehicles. I believe that it is the reason behind the
     difference. 
 """)
