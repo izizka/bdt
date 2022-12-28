@@ -69,8 +69,8 @@ filter_df = filter_df[["hour_number", "number_of_vehicles"]]
 st.bar_chart(filter_df, x='hour_number', y='number_of_vehicles')
 
 st.write("""As you can see there is a gap in data on 19th of December between 2 and 5 AM. I did not find any reason for that. 
-I assume that stream was down or the gap is linked with changes from weekend schedules to workday schedules.""")
-st.write("By information provided by DPP (public transport company), they own 802 trams, 1216 buses. There are around 35 tram lines, 143 bus lines.")
+I assume that the stream was down or the gap is linked with changes from weekend schedules to workday schedules.""")
+st.write("According to information provided by DPP (public transport company), they own 802 trams, 1216 buses. There are around 35 tram lines, 143 bus lines.")
 
 
 st.header("Average speed of vehicles in each hour of given date")
@@ -80,12 +80,12 @@ Second - Trains, Trams do not sent this type of information (always null) on the
 Second issue can be avoided by computing the average speed on given line within an hour. The average speed for all vehicles within an hour is just 
 average of the average line speeds. This way of solving counts with the randomness in the period when the message is sent. Let's say that there is a uniform
 random distribution of place where the message is sent. So it means that the probability of sending message at a stop is the same as probability of sending message in part of the road between stops.""")
-st.write("""Second attitude is easier and more stable/consistent. The main idea is to sum traveled distances for each car within an hour and compute average distance traveled.
-The time window is equal to one hour so average traveled distance is also the average speed for vehicles. I can use similar attitude as in the first approach where the current speed is missing.
-Instead of computing an average speed I would use just distance and time would be one hour.""")
+st.write("""Second approach is easier and more stable/consistent. The main idea is to sum traveled distances for each car within an hour and compute average distance traveled.
+The time window is equal to one hour so the average traveled distance is also the average speed for vehicles. I can use similar approach as in the first example where the current speed is missing.
+Instead of computing an average speed I would use just distance and time would equal one hour.""")
 
-st.write("""In the following section you can find average speeds computed with both approaches (first attitude = first figure | second attitude = second figure)""")
-st.write("Note that there are missing data on the 19th of December between 2 and 5 AM (same problem as with counting of vehicles).")
+st.write("""In the following section you can find average speeds computed with both approaches (first approach = first figure | second approach = second figure)""")
+st.write("Note that there are missing data on the 19th of December between 2 AM and 5 AM (same problem as with counting of vehicles).")
 
 st.subheader("Select Date")
 date_selected_avg = st.date_input(
@@ -153,7 +153,7 @@ filter_df = df_trains.loc[df_trains["day_number"] == date_selected_avg]
 filter_df = filter_df[["hour_number", "avg_speed"]]
 st.bar_chart(filter_df, x='hour_number', y='avg_speed')
 st.write("""Here is the biggest difference between the approaches. I double checked the results and I did not find any mistake.
-    I would say that the second figure is more accurate. The first attitude does not work in this case because of the speed between stops. 
+    I would say that the second figure is more accurate. The first approach does not work in this case because of the speed between stops. 
     Train is really fast if it is not at a stop. The speed limit is around 160 km/h in some cases 120 km/h. We can assume that the speed limit 
     in Prague's lines is lower. On the other hand, it is still very high compared to other vehicles. I believe that it is the reason behind the
     difference. 
@@ -175,6 +175,6 @@ st.write("""In this case, I provided two different approaches and compared them.
 st.write("""Last but not least, I would like to talk about average speed peeks. Similar to the previous task, there is a significant difference between 
         weekends and other days.
         Weekday is usually without heavy traffic, and the average speed is consistent. On the other hand, workdays are more complicated.
-        The highest average speed is in the evening or at night. It could be coursed by traffic and the number of traveling people. More 
+        The highest average speed is in the evening or at night. It could be caused by traffic and the number of passengers. More 
         people means longer waiting time at stops -> lower average speed. 
 """)
